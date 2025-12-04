@@ -1,0 +1,13 @@
+spring:
+  profiles:
+    active: local
+  application:
+    name: financial-ledge-backend
+
+server:
+  port: 8080
+
+logging:
+  level:
+    root: INFO
+
