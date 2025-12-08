@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useMemo} from 'react';
 import {
   StatusBar,
   TouchableOpacity,
@@ -11,12 +11,20 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import HomeScreen from './screens/HomeScreen';
 import TransactionsScreen from './screens/TransactionsScreen';
 
-const queryClient = new QueryClient();
-
 type Screen = 'home' | 'transactions';
 
 function App(): React.JSX.Element {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
+  
+  // QueryClient를 useMemo로 메모이제이션하여 재생성 방지
+  const queryClient = useMemo(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: 1,
+        refetchOnWindowFocus: false,
+      },
+    },
+  }), []);
 
   return (
     <QueryClientProvider client={queryClient}>
