@@ -1,0 +1,26 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="32" cy="32" r="30" fill="url(#gradient)" stroke="url(#gradientStroke)" stroke-width="2"/>
+  
+  <!-- Coin Icon -->
+  <g transform="translate(32, 32)">
+    <!-- Outer Coin -->
+    <circle cx="0" cy="0" r="18" fill="#FFD700" stroke="#FFA500" stroke-width="2"/>
+    <!-- Inner Coin Circle -->
+    <circle cx="0" cy="0" r="14" fill="#FFF9E6" stroke="#FFD700" stroke-width="1.5"/>
+    <!-- Coin Symbol -->
+    <text x="0" y="5" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#FF6B35">₩</text>
+  </g>
+  
+  <!-- Gradient Definitions -->
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667EEA;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764BA2;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="gradientStroke" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4ECDC4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#44A08D;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+</svg>

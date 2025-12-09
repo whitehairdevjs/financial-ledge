@@ -15,6 +15,7 @@ web-build/
 *.swp
 *.swo
 *~
+*.mdc
 
 # OS
 .DS_Store

@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useCreateTransaction } from "@/hooks/useTransactions";
+import { useAccounts } from "@/hooks/useAccounts";
+import { useCategories } from "@/hooks/useCategories";
 import { TransactionType } from "@/types/transaction";
 
 interface ExpenseFormProps {
@@ -23,10 +25,33 @@ export default function ExpenseForm({ onSuccess, defaultDate }: ExpenseFormProps
   );
 
   const { mutateAsync, isPending } = useCreateTransaction();
+  const { data: accounts = [], isLoading: accountsLoading } = useAccounts();
+  const { data: categories = [], isLoading: categoriesLoading } = useCategories();
+
+  // 거래 유형에 맞는 카테고리 필터링
+  const filteredCategories = useMemo(() => {
+    return categories.filter(
+      (cat) =>
+        cat.transactionType === transactionType ||
+        cat.transactionType === "BOTH"
+    );
+  }, [categories, transactionType]);
+
+  // 활성 계정만 필터링하고 정렬 (카드가 제일 위에 오도록)
+  const activeAccounts = useMemo(() => {
+    const filtered = accounts.filter((acc) => acc.isActive);
+    return filtered.sort((a, b) => {
+      // 카드(CREDIT_CARD)가 제일 위에 오도록
+      if (a.accountType === "CREDIT_CARD" && b.accountType !== "CREDIT_CARD") return -1;
+      if (a.accountType !== "CREDIT_CARD" && b.accountType === "CREDIT_CARD") return 1;
+      // 같은 타입이면 이름순 정렬
+      return a.name.localeCompare(b.name, "ko");
+    });
+  }, [accounts]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!accountId) return alert("계정 ID를 입력해주세요.");
+    if (!accountId) return alert("계정을 선택해주세요.");
     if (!amount) return alert("금액을 입력해주세요.");
     if (!description) return alert("내역을 입력해주세요.");
 
@@ -56,7 +81,7 @@ export default function ExpenseForm({ onSuccess, defaultDate }: ExpenseFormProps
         <h2 className="text-lg font-semibold text-gray-900">
           수입/지출 입력
         </h2>
-        <span className="text-xs text-gray-500">필수: 계정 ID, 금액, 내역</span>
+        <span className="text-xs text-gray-500">필수: 계정, 금액, 내역</span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -64,9 +89,11 @@ export default function ExpenseForm({ onSuccess, defaultDate }: ExpenseFormProps
           <span className="text-sm text-gray-700">유형</span>
           <select
             value={transactionType}
-            onChange={(e) =>
-              setTransactionType(e.target.value as TransactionType)
-            }
+            onChange={(e) => {
+              setTransactionType(e.target.value as TransactionType);
+              // 거래 유형 변경 시 카테고리 초기화 (새 유형에 맞지 않을 수 있음)
+              setCategoryId("");
+            }}
             className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value={TransactionType.INCOME}>수입</option>
@@ -85,26 +112,44 @@ export default function ExpenseForm({ onSuccess, defaultDate }: ExpenseFormProps
         </label>
 
         <label className="space-y-1">
-          <span className="text-sm text-gray-700">계정 ID</span>
-          <input
-            type="number"
+          <span className="text-sm text-gray-700">계정</span>
+          <select
             value={accountId}
             onChange={(e) => setAccountId(e.target.value)}
-            placeholder="예: 1"
             className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
-          />
+            disabled={accountsLoading}
+          >
+            <option value="">계정을 선택하세요</option>
+            {activeAccounts.map((account) => (
+              <option key={account.id} value={account.id}>
+                {account.name} ({account.accountType}) - {account.balance.toLocaleString()}원
+              </option>
+            ))}
+          </select>
+          {accountsLoading && (
+            <p className="text-xs text-gray-500">계정 목록을 불러오는 중...</p>
+          )}
         </label>
 
         <label className="space-y-1">
-          <span className="text-sm text-gray-700">카테고리 ID (선택)</span>
-          <input
-            type="number"
+          <span className="text-sm text-gray-700">카테고리 (선택)</span>
+          <select
             value={categoryId}
             onChange={(e) => setCategoryId(e.target.value)}
-            placeholder="예: 2"
             className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+            disabled={categoriesLoading}
+          >
+            <option value="">카테고리를 선택하세요 (선택사항)</option>
+            {filteredCategories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+          {categoriesLoading && (
+            <p className="text-xs text-gray-500">카테고리 목록을 불러오는 중...</p>
+          )}
         </label>
 
         <label className="space-y-1">

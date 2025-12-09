@@ -6,8 +6,11 @@ import ClientLayout from "@/components/ClientLayout";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Financial Ledge",
+  title: "Mini Money",
   description: "Personal Financial Management Application",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({

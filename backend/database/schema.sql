@@ -10,14 +10,13 @@ CREATE TABLE IF NOT EXISTS categories (
     parent_id BIGINT, -- 상위 카테고리 (자기 참조)
     transaction_type VARCHAR(20) NOT NULL CHECK (transaction_type IN ('INCOME', 'EXPENSE', 'BOTH')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE SET NULL
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 계정/지갑 테이블
 CREATE TABLE IF NOT EXISTS accounts (
     id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
+    name VARCHAR(100) NOT NULL UNIQUE,
     account_type VARCHAR(50) NOT NULL, -- CASH, BANK, CREDIT_CARD, INVESTMENT 등
     balance DECIMAL(15, 2) DEFAULT 0.00 NOT NULL,
     currency VARCHAR(10) DEFAULT 'KRW' NOT NULL,
@@ -39,10 +38,7 @@ CREATE TABLE IF NOT EXISTS transactions (
     target_account_id BIGINT, -- 이체(TRANSFER) 시 대상 계정
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
-    FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE RESTRICT,
-    FOREIGN KEY (target_account_id) REFERENCES accounts(id) ON DELETE SET NULL
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 예산 테이블
@@ -56,9 +52,7 @@ CREATE TABLE IF NOT EXISTS budgets (
     end_date DATE,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
-    FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE SET NULL
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 태그 테이블
@@ -73,9 +67,7 @@ CREATE TABLE IF NOT EXISTS tags (
 CREATE TABLE IF NOT EXISTS transaction_tags (
     transaction_id BIGINT NOT NULL,
     tag_id BIGINT NOT NULL,
-    PRIMARY KEY (transaction_id, tag_id),
-    FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE CASCADE,
-    FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+    PRIMARY KEY (transaction_id, tag_id)
 );
 
 -- 인덱스 생성
@@ -86,28 +78,6 @@ CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(transaction_typ
 CREATE INDEX IF NOT EXISTS idx_budgets_category ON budgets(category_id);
 CREATE INDEX IF NOT EXISTS idx_budgets_period ON budgets(start_date, end_date);
 CREATE INDEX IF NOT EXISTS idx_categories_parent ON categories(parent_id);
-
--- 트리거: updated_at 자동 업데이트 함수
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
--- 각 테이블에 updated_at 트리거 적용
-CREATE TRIGGER update_categories_updated_at BEFORE UPDATE ON categories
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_accounts_updated_at BEFORE UPDATE ON accounts
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_transactions_updated_at BEFORE UPDATE ON transactions
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_budgets_updated_at BEFORE UPDATE ON budgets
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- 초기 데이터 삽입 (선택사항)
 -- 기본 카테고리
@@ -124,7 +94,7 @@ ON CONFLICT (name) DO NOTHING;
 
 -- 기본 계정
 INSERT INTO accounts (name, account_type, balance) VALUES
+    ('카드', 'CARD', 0.00),
     ('현금', 'CASH', 0.00),
     ('주계좌', 'BANK', 0.00)
-ON CONFLICT DO NOTHING;
-
+ON CONFLICT (name) DO NOTHING;
