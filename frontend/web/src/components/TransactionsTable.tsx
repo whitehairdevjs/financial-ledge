@@ -11,6 +11,7 @@ import {
   ColumnDef,
 } from "@tanstack/react-table";
 import { Transaction, TransactionType } from "@/types/transaction";
+import CategoryBadge from "./CategoryBadge";
 import { useState } from "react";
 
 const columnHelper = createColumnHelper<Transaction>();
@@ -70,10 +71,19 @@ export default function TransactionsTable({ data }: { data: Transaction[] }) {
       },
       size: 120,
     }),
-    columnHelper.accessor((row) => row.category?.name ?? "-", {
+    columnHelper.accessor("category", {
       id: "category",
       header: "Category",
-      cell: (info) => info.getValue(),
+      cell: (info) => {
+        const category = info.getValue();
+        if (!category) return "-";
+        return (
+          <CategoryBadge
+            name={category.name ?? "-"}
+            color={category.color}
+          />
+        );
+      },
       size: 150,
     }),
   ];

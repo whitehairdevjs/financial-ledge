@@ -7,6 +7,7 @@ export enum TransactionType {
 export interface CategoryRef {
   id: number;
   name?: string;
+  color?: string;
 }
 
 export interface AccountRef {

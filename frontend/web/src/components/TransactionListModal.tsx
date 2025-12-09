@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useTransactions } from "@/hooks/useTransactions";
 import { Transaction, TransactionType } from "@/types/transaction";
+import CategoryBadge from "./CategoryBadge";
 
 interface TransactionListModalProps {
   date: string;
@@ -132,9 +133,11 @@ export default function TransactionListModal({
                             : "이체"}
                         </span>
                         {transaction.category && (
-                          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 sm:py-1 rounded">
-                            {transaction.category.name}
-                          </span>
+                          <CategoryBadge
+                            name={transaction.category.name}
+                            color={transaction.category.color}
+                            size="md"
+                          />
                         )}
                       </div>
                       <h4 className="font-medium text-sm sm:text-base text-gray-900 mb-1 break-words">

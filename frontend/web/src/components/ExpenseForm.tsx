@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useCreateTransaction } from "@/hooks/useTransactions";
 import { useAccounts } from "@/hooks/useAccounts";
 import { useCategories } from "@/hooks/useCategories";
@@ -23,6 +23,17 @@ export default function ExpenseForm({ onSuccess, defaultDate }: ExpenseFormProps
   const [transactionType, setTransactionType] = useState<TransactionType>(
     TransactionType.EXPENSE
   );
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+  const categoryDropdownRef = useRef<HTMLDivElement>(null);
+
+  const handleSelectCategory = useCallback((id: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    setCategoryId(id);
+    setIsCategoryDropdownOpen(false);
+  }, []);
 
   const { mutateAsync, isPending } = useCreateTransaction();
   const { data: accounts = [], isLoading: accountsLoading } = useAccounts();
@@ -36,6 +47,11 @@ export default function ExpenseForm({ onSuccess, defaultDate }: ExpenseFormProps
         cat.transactionType === "BOTH"
     );
   }, [categories, transactionType]);
+
+  const selectedCategory = useMemo(
+    () => categories.find((cat) => String(cat.id) === categoryId),
+    [categories, categoryId]
+  );
 
   // 활성 계정만 필터링하고 정렬 (카드가 제일 위에 오도록)
   const activeAccounts = useMemo(() => {
@@ -64,6 +80,32 @@ export default function ExpenseForm({ onSuccess, defaultDate }: ExpenseFormProps
       setAccountId(String(cardAccount.id));
     }
   }, [cardAccount, accountId]);
+
+  // 외부 클릭 시 드롭다운 닫기
+  useEffect(() => {
+    if (!isCategoryDropdownOpen) return;
+
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (
+        categoryDropdownRef.current &&
+        !categoryDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsCategoryDropdownOpen(false);
+      }
+    };
+
+    // 약간의 지연을 두어 현재 클릭 이벤트가 처리된 후에 리스너 추가
+    const timeoutId = setTimeout(() => {
+      document.addEventListener("mousedown", handleClickOutside, true);
+      document.addEventListener("touchstart", handleClickOutside, true);
+    }, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener("mousedown", handleClickOutside, true);
+      document.removeEventListener("touchstart", handleClickOutside, true);
+    };
+  }, [isCategoryDropdownOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,19 +192,76 @@ export default function ExpenseForm({ onSuccess, defaultDate }: ExpenseFormProps
 
         <label className="space-y-1">
           <span className="text-xs sm:text-sm text-gray-700">카테고리 (선택)</span>
-          <select
-            value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
-            className="w-full border rounded px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={categoriesLoading}
-          >
-            <option value="">카테고리를 선택하세요 (선택사항)</option>
-            {filteredCategories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
+          <div className="relative" ref={categoryDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+              className="w-full border rounded px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-left flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={categoriesLoading}
+            >
+              <span className="flex items-center gap-2 min-w-0 flex-1">
+                {selectedCategory ? (
+                  <>
+                    {selectedCategory.color && (
+                      <span
+                        className="w-3 h-3 rounded-full border border-black/5 flex-shrink-0"
+                        style={{ backgroundColor: selectedCategory.color }}
+                      />
+                    )}
+                    <span className="truncate">{selectedCategory.name}</span>
+                  </>
+                ) : (
+                  <span className="text-gray-500">카테고리를 선택하세요 (선택사항)</span>
+                )}
+              </span>
+              <span className="ml-2 text-gray-400 flex-shrink-0">
+                {isCategoryDropdownOpen ? "▲" : "▼"}
+              </span>
+            </button>
+
+            {isCategoryDropdownOpen && (
+              <div 
+                className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto"
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  onClick={(e) => handleSelectCategory("", e)}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  className={`w-full px-3 py-2 text-xs sm:text-sm text-left hover:bg-gray-50 flex items-center gap-2 ${
+                    !categoryId ? "bg-blue-50" : ""
+                  }`}
+                >
+                  <span className="text-gray-500">카테고리 없음</span>
+                </button>
+                {filteredCategories.map((category) => (
+                  <button
+                    key={category.id}
+                    type="button"
+                    onClick={(e) => handleSelectCategory(String(category.id), e)}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    className={`w-full px-3 py-2 text-xs sm:text-sm text-left hover:bg-gray-50 flex items-center gap-2 ${
+                      categoryId === String(category.id) ? "bg-blue-50" : ""
+                    }`}
+                  >
+                    {category.color && (
+                      <span
+                        className="w-3 h-3 rounded-full border border-black/5 flex-shrink-0"
+                        style={{ backgroundColor: category.color }}
+                      />
+                    )}
+                    <span className="truncate">{category.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           {categoriesLoading && (
             <p className="text-xs text-gray-500">카테고리 목록을 불러오는 중...</p>
           )}

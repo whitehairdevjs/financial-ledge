@@ -3,6 +3,7 @@
 import { useTransactions } from "@/hooks/useTransactions";
 import { TransactionType } from "@/types/transaction";
 import { useMemo } from "react";
+import CategoryBadge from "@/components/CategoryBadge";
 
 export default function StatsPage() {
   const { data: transactions, isLoading, error } = useTransactions();
@@ -149,7 +150,14 @@ export default function StatsPage() {
                         )}
                       </td>
                       <td className="hidden sm:table-cell px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
-                        {transaction.category?.name || "-"}
+                        {transaction.category ? (
+                          <CategoryBadge
+                            name={transaction.category.name}
+                            color={transaction.category.color}
+                          />
+                        ) : (
+                          "-"
+                        )}
                       </td>
                       <td
                         className={`px-3 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-right font-medium ${
