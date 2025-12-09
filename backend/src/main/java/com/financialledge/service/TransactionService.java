@@ -16,7 +16,7 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
 
     public List<Transaction> getAllTransactions() {
-        return transactionRepository.findAll();
+        return transactionRepository.findAllOrderByTransactionDateDescAndUpdatedAtDesc();
     }
 
     public Transaction getTransactionById(Long id) {
