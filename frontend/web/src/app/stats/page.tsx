@@ -4,6 +4,15 @@ import { useTransactions } from "@/hooks/useTransactions";
 import { TransactionType } from "@/types/transaction";
 import { useMemo } from "react";
 import CategoryBadge from "@/components/CategoryBadge";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 export default function StatsPage() {
   const { data: transactions, isLoading, error } = useTransactions();
@@ -37,6 +46,38 @@ export default function StatsPage() {
           new Date(a.transactionDate).getTime()
       )
       .slice(0, 10);
+  }, [transactions]);
+
+  const expenseChartData = useMemo(() => {
+    if (!transactions) return [];
+
+    const expenseTransactions = transactions.filter(
+      (t) => t.transactionType === TransactionType.EXPENSE
+    );
+
+    const last30Days = Array.from({ length: 30 }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (29 - i));
+      return date.toISOString().split("T")[0];
+    });
+
+    const groupedByDate = expenseTransactions.reduce((acc, transaction) => {
+      const date = transaction.transactionDate.split("T")[0];
+      if (acc[date]) {
+        acc[date] += Number(transaction.amount);
+      } else {
+        acc[date] = Number(transaction.amount);
+      }
+      return acc;
+    }, {} as Record<string, number>);
+
+    return last30Days.map((date) => ({
+      date: new Date(date).toLocaleDateString("ko-KR", {
+        month: "2-digit",
+        day: "2-digit",
+      }),
+      amount: groupedByDate[date] || 0,
+    }));
   }, [transactions]);
 
   const formatCurrency = (amount: number) => {
@@ -102,6 +143,50 @@ export default function StatsPage() {
             >
               {formatCurrency(summary.balance)}
             </div>
+          </div>
+        </div>
+
+        {/* 지출 차트 */}
+        <div className="bg-white rounded-lg shadow">
+          <div className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 border-b border-gray-200">
+            <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900">
+              최근 30일 지출 추이
+            </h2>
+          </div>
+          <div className="p-3 sm:p-4 md:p-6">
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={expenseChartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 12 }}
+                  interval="preserveStartEnd"
+                />
+                <YAxis
+                  tick={{ fontSize: 12 }}
+                  tickFormatter={(value) => {
+                    if (value >= 1000000) {
+                      return `${(value / 1000000).toFixed(1)}M`;
+                    } else if (value >= 1000) {
+                      return `${(value / 1000).toFixed(0)}K`;
+                    }
+                    return value.toString();
+                  }}
+                />
+                <Tooltip
+                  formatter={(value: number) => formatCurrency(value)}
+                  labelStyle={{ color: "#374151" }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="amount"
+                  stroke="#ef4444"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
