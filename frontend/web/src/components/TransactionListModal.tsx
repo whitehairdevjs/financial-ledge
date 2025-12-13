@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useTransactions } from "@/hooks/useTransactions";
+import { useTransactions, useDeleteTransaction } from "@/hooks/useTransactions";
 import { Transaction, TransactionType } from "@/types/transaction";
 import CategoryBadge from "./CategoryBadge";
 import TransactionEditModal from "./TransactionEditModal";
@@ -19,6 +19,8 @@ export default function TransactionListModal({
 }: TransactionListModalProps) {
   const { data: allTransactions = [], isLoading } = useTransactions();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [deletingTransactionId, setDeletingTransactionId] = useState<number | null>(null);
+  const deleteTransaction = useDeleteTransaction();
 
   // 해당 날짜의 거래 내역 필터링
   const dayTransactions = useMemo(() => {
@@ -49,6 +51,20 @@ export default function TransactionListModal({
       .reduce((sum, t) => sum + t.amount, 0);
     return { income, expense, net: income - expense };
   }, [dayTransactions]);
+
+  const handleDelete = async (transactionId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm("정말 이 거래를 삭제하시겠습니까?")) {
+      setDeletingTransactionId(transactionId);
+      try {
+        await deleteTransaction.mutateAsync(transactionId);
+      } catch (error) {
+        alert("거래 삭제 중 오류가 발생했습니다.");
+      } finally {
+        setDeletingTransactionId(null);
+      }
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -114,11 +130,11 @@ export default function TransactionListModal({
               {dayTransactions.map((transaction) => (
                 <div
                   key={transaction.id}
-                  className="border rounded-lg p-3 sm:p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                  className="border rounded-lg p-3 sm:p-4 hover:bg-gray-50 transition-colors cursor-pointer group relative"
                   onClick={() => setEditingTransaction(transaction)}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-0">
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 pr-8 sm:pr-0">
                       <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
                         <span
                           className={`px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${
@@ -155,17 +171,64 @@ export default function TransactionListModal({
                         )}
                       </div>
                     </div>
-                    <div className="text-left sm:text-right sm:ml-4 flex-shrink-0">
-                      <p
-                        className={`text-base sm:text-lg font-semibold ${
-                          transaction.transactionType === TransactionType.INCOME
-                            ? "text-green-600"
-                            : "text-red-600"
-                        }`}
-                      >
-                        {transaction.transactionType === TransactionType.INCOME ? "+" : "-"}
-                        {transaction.amount.toLocaleString()}원
-                      </p>
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="text-left sm:text-right sm:ml-4 flex-shrink-0">
+                        <p
+                          className={`text-base sm:text-lg font-semibold ${
+                            transaction.transactionType === TransactionType.INCOME
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }`}
+                        >
+                          {transaction.transactionType === TransactionType.INCOME ? "+" : "-"}
+                          {transaction.amount.toLocaleString()}원
+                        </p>
+                      </div>
+                      {transaction.id && (
+                        <button
+                          onClick={(e) => handleDelete(transaction.id!, e)}
+                          disabled={deletingTransactionId === transaction.id}
+                          className="opacity-0 group-hover:opacity-100 sm:opacity-100 flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-lg bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="삭제"
+                        >
+                          {deletingTransactionId === transaction.id ? (
+                            <svg
+                              className="animate-spin h-4 w-4 sm:h-5 sm:w-5"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              ></circle>
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              ></path>
+                            </svg>
+                          ) : (
+                            <svg
+                              className="h-4 w-4 sm:h-5 sm:w-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                          )}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
