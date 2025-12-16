@@ -1,7 +1,9 @@
 package com.financialledge.service;
 
 import com.financialledge.entity.Account;
+import com.financialledge.entity.User;
 import com.financialledge.repository.AccountRepository;
+import com.financialledge.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,26 +16,33 @@ import java.util.List;
 public class AccountService {
 
     private final AccountRepository accountRepository;
+    private final SecurityUtil securityUtil;
 
     public List<Account> getAllAccounts() {
-        return accountRepository.findAll();
+        Long userId = securityUtil.getCurrentUserId();
+        return accountRepository.findByUserId(userId);
     }
 
     public Account getAccountById(Long id) {
-        return accountRepository.findById(id)
+        Long userId = securityUtil.getCurrentUserId();
+        return accountRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new RuntimeException("Account not found with id: " + id));
     }
 
     public List<Account> getAccountsByType(Account.AccountType accountType) {
-        return accountRepository.findByAccountType(accountType);
+        Long userId = securityUtil.getCurrentUserId();
+        return accountRepository.findByUserIdAndAccountType(userId, accountType);
     }
 
     public List<Account> getActiveAccounts() {
-        return accountRepository.findByIsActiveTrue();
+        Long userId = securityUtil.getCurrentUserId();
+        return accountRepository.findByUserIdAndIsActiveTrue(userId);
     }
 
     @Transactional
     public Account createAccount(Account account) {
+        User currentUser = securityUtil.getCurrentUser();
+        account.setUser(currentUser);
         return accountRepository.save(account);
     }
 

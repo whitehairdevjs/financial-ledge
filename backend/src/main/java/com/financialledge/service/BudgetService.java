@@ -1,11 +1,14 @@
 package com.financialledge.service;
 
 import com.financialledge.entity.Budget;
+import com.financialledge.entity.User;
 import com.financialledge.repository.BudgetRepository;
+import com.financialledge.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -14,34 +17,43 @@ import java.util.List;
 public class BudgetService {
 
     private final BudgetRepository budgetRepository;
+    private final SecurityUtil securityUtil;
 
     public List<Budget> getAllBudgets() {
-        return budgetRepository.findAll();
+        Long userId = securityUtil.getCurrentUserId();
+        return budgetRepository.findByUserId(userId);
     }
 
     public Budget getBudgetById(Long id) {
-        return budgetRepository.findById(id)
+        Long userId = securityUtil.getCurrentUserId();
+        return budgetRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new RuntimeException("Budget not found with id: " + id));
     }
 
     public List<Budget> getBudgetsByCategoryId(Long categoryId) {
-        return budgetRepository.findByCategoryId(categoryId);
+        Long userId = securityUtil.getCurrentUserId();
+        return budgetRepository.findByUserIdAndCategoryId(userId, categoryId);
     }
 
     public List<Budget> getBudgetsByAccountId(Long accountId) {
-        return budgetRepository.findByAccountId(accountId);
+        Long userId = securityUtil.getCurrentUserId();
+        return budgetRepository.findByUserIdAndAccountId(userId, accountId);
     }
 
     public List<Budget> getActiveBudgets() {
-        return budgetRepository.findByIsActiveTrue();
+        Long userId = securityUtil.getCurrentUserId();
+        return budgetRepository.findByUserIdAndIsActiveTrue(userId);
     }
 
     public List<Budget> getBudgetsByPeriodType(Budget.PeriodType periodType) {
-        return budgetRepository.findByPeriodType(periodType);
+        Long userId = securityUtil.getCurrentUserId();
+        return budgetRepository.findByUserIdAndPeriodType(userId, periodType);
     }
 
     @Transactional
     public Budget createBudget(Budget budget) {
+        User currentUser = securityUtil.getCurrentUser();
+        budget.setUser(currentUser);
         return budgetRepository.save(budget);
     }
 

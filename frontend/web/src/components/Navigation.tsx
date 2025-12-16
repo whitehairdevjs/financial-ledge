@@ -1,13 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
+import { authStorage, User } from "@/lib/auth";
+import { authApi } from "@/lib/authApi";
 
 export default function Navigation() {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    setUser(authStorage.getUser());
+  }, []);
+
+  const handleLogout = () => {
+    authApi.logout();
+    setUser(null);
+    router.push("/login");
+    router.refresh();
+  };
 
   const navItems = [
     { href: "/", label: "ABook" },
@@ -46,6 +61,28 @@ export default function Navigation() {
                   );
                 })}
             </div>
+          </div>
+
+          {/* User menu - Desktop */}
+          <div className="hidden sm:flex sm:items-center sm:space-x-4">
+            {user ? (
+              <>
+                <span className="text-sm text-gray-700">{user.username}</span>
+                <button
+                  onClick={handleLogout}
+                  className="px-3 py-1 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md"
+                >
+                  로그아웃
+                </button>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                className="px-3 py-1 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md"
+              >
+                로그인
+              </Link>
+            )}
           </div>
           
           {/* Mobile menu button */}
@@ -89,9 +126,31 @@ export default function Navigation() {
                     }`}
                   >
                     {item.label}
-                  </Link>
+                    </Link>
                 );
               })}
+            {/* Mobile user menu */}
+            {user ? (
+              <>
+                <div className="px-3 py-2 text-base font-medium text-gray-700 border-t border-gray-200">
+                  {user.username}
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 rounded-md"
+                >
+                  로그아웃
+                </button>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 rounded-md border-t border-gray-200"
+              >
+                로그인
+              </Link>
+            )}
           </div>
         </div>
       )}

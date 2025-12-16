@@ -11,17 +11,21 @@ import java.util.List;
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
     
-    List<Transaction> findByTransactionType(Transaction.TransactionType transactionType);
+    List<Transaction> findByUserId(Long userId);
     
-    List<Transaction> findByCategoryId(Long categoryId);
+    Optional<Transaction> findByIdAndUserId(Long id, Long userId);
     
-    List<Transaction> findByAccountId(Long accountId);
+    List<Transaction> findByUserIdAndTransactionType(Long userId, Transaction.TransactionType transactionType);
     
-    List<Transaction> findByTransactionDateBetween(LocalDate startDate, LocalDate endDate);
+    List<Transaction> findByUserIdAndCategoryId(Long userId, Long categoryId);
     
-    List<Transaction> findByTransactionTypeAndCategoryId(Transaction.TransactionType transactionType, Long categoryId);
+    List<Transaction> findByUserIdAndAccountId(Long userId, Long accountId);
     
-    @Query("SELECT t FROM Transaction t ORDER BY t.transactionDate DESC, t.updatedAt DESC")
-    List<Transaction> findAllOrderByTransactionDateDescAndUpdatedAtDesc();
+    List<Transaction> findByUserIdAndTransactionDateBetween(Long userId, LocalDate startDate, LocalDate endDate);
+    
+    List<Transaction> findByUserIdAndTransactionTypeAndCategoryId(Long userId, Transaction.TransactionType transactionType, Long categoryId);
+    
+    @Query("SELECT t FROM Transaction t WHERE t.user.id = :userId ORDER BY t.transactionDate DESC, t.updatedAt DESC")
+    List<Transaction> findByUserIdOrderByTransactionDateDescAndUpdatedAtDesc(Long userId);
 }
 

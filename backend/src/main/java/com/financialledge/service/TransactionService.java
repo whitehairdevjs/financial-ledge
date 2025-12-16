@@ -1,11 +1,14 @@
 package com.financialledge.service;
 
 import com.financialledge.entity.Transaction;
+import com.financialledge.entity.User;
 import com.financialledge.repository.TransactionRepository;
+import com.financialledge.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -14,30 +17,38 @@ import java.util.List;
 public class TransactionService {
 
     private final TransactionRepository transactionRepository;
+    private final SecurityUtil securityUtil;
 
     public List<Transaction> getAllTransactions() {
-        return transactionRepository.findAllOrderByTransactionDateDescAndUpdatedAtDesc();
+        Long userId = securityUtil.getCurrentUserId();
+        return transactionRepository.findByUserIdOrderByTransactionDateDescAndUpdatedAtDesc(userId);
     }
 
     public Transaction getTransactionById(Long id) {
-        return transactionRepository.findById(id)
+        Long userId = securityUtil.getCurrentUserId();
+        return transactionRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new RuntimeException("Transaction not found with id: " + id));
     }
 
     public List<Transaction> getTransactionsByType(Transaction.TransactionType type) {
-        return transactionRepository.findByTransactionType(type);
+        Long userId = securityUtil.getCurrentUserId();
+        return transactionRepository.findByUserIdAndTransactionType(userId, type);
     }
 
     public List<Transaction> getTransactionsByCategoryId(Long categoryId) {
-        return transactionRepository.findByCategoryId(categoryId);
+        Long userId = securityUtil.getCurrentUserId();
+        return transactionRepository.findByUserIdAndCategoryId(userId, categoryId);
     }
 
     public List<Transaction> getTransactionsByAccountId(Long accountId) {
-        return transactionRepository.findByAccountId(accountId);
+        Long userId = securityUtil.getCurrentUserId();
+        return transactionRepository.findByUserIdAndAccountId(userId, accountId);
     }
 
     @Transactional
     public Transaction createTransaction(Transaction transaction) {
+        User currentUser = securityUtil.getCurrentUser();
+        transaction.setUser(currentUser);
         return transactionRepository.save(transaction);
     }
 
@@ -57,7 +68,8 @@ public class TransactionService {
 
     @Transactional
     public void deleteTransaction(Long id) {
-        transactionRepository.deleteById(id);
+        Transaction transaction = getTransactionById(id);
+        transactionRepository.delete(transaction);
     }
 }
 

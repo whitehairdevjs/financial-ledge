@@ -10,15 +10,19 @@ import java.util.List;
 @Repository
 public interface BudgetRepository extends JpaRepository<Budget, Long> {
     
-    List<Budget> findByCategoryId(Long categoryId);
+    List<Budget> findByUserId(Long userId);
     
-    List<Budget> findByAccountId(Long accountId);
+    Optional<Budget> findByIdAndUserId(Long id, Long userId);
     
-    List<Budget> findByIsActiveTrue();
+    List<Budget> findByUserIdAndCategoryId(Long userId, Long categoryId);
     
-    List<Budget> findByStartDateLessThanEqualAndEndDateGreaterThanEqual(
-            LocalDate date1, LocalDate date2);
+    List<Budget> findByUserIdAndAccountId(Long userId, Long accountId);
     
-    List<Budget> findByPeriodType(Budget.PeriodType periodType);
+    List<Budget> findByUserIdAndIsActiveTrue(Long userId);
+    
+    List<Budget> findByUserIdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+            Long userId, LocalDate date1, LocalDate date2);
+    
+    List<Budget> findByUserIdAndPeriodType(Long userId, Budget.PeriodType periodType);
 }
 
